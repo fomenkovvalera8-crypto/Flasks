@@ -23,46 +23,52 @@ public class State {
         return tubes;
     }
 
-    public List<Move> getMoves() {
-        return moves;
-    }
-
-    public int getDepth() {
-        return depth;
-    }
-
-    // --- Проверка, решено ли состояние ---
     public boolean isSolved() {
-        for (List<String> tube : tubes) {
+        for (List<String> tube : tubes)
+        {
             String color = null;
-            for (String cell : tube) {
-                if (cell == null || cell.equals(".")) continue;
-                if (color == null) color = cell;
-                else if (!color.equals(cell)) return false; // разный цвет в одной колбе
+            for (String cell : tube)
+            {
+                if (cell == null || cell.equals("."))
+                {
+                    continue;
+                }
+                if (color == null)
+                {
+                    color = cell;
+                }
+                else if (!color.equals(cell))
+                {
+                    return false; // разный цвет в одной колбе
+                }
             }
         }
         return true;
     }
-
-    // --- Создаёт новое состояние после совершения хода ---
     public State makeMove(int from, int to) {
         List<List<String>> newTubes = deepCopy(tubes);
         String colorToPour = null;
 
         // находим верхний цвет из колбы "from"
         for (int i = 0; i < newTubes.get(from).size(); i++) {
-            if (newTubes.get(from).get(i) != null && !newTubes.get(from).get(i).equals(".")) {
+            if (newTubes.get(from).get(i) != null && !newTubes.get(from).get(i).equals("."))
+            {
                 colorToPour = newTubes.get(from).get(i);
                 newTubes.get(from).set(i, "."); // удаляем из источника
                 break;
             }
         }
 
-        if (colorToPour == null) return null; // нечего переливать
+        if (colorToPour == null)
+        {
+            return null; // нечего переливать
+        }
 
         // наливаем в первую пустую ячейку сверху в колбе "to"
-        for (int i = newTubes.get(to).size() - 1; i >= 0; i--) {
-            if (newTubes.get(to).get(i) == null || newTubes.get(to).get(i).equals(".")) {
+        for (int i = newTubes.get(to).size() - 1; i >= 0; i--)
+        {
+            if (newTubes.get(to).get(i) == null || newTubes.get(to).get(i).equals("."))
+            {
                 newTubes.get(to).set(i, colorToPour);
                 break;
             }
@@ -77,18 +83,24 @@ public class State {
     // --- Глубокое копирование состояния ---
     private static List<List<String>> deepCopy(List<List<String>> src) {
         List<List<String>> copy = new ArrayList<>();
-        for (List<String> tube : src) {
+        for (List<String> tube : src)
+        {
             copy.add(new ArrayList<>(tube));
         }
         return copy;
     }
 
-    // --- Хэш и equals для хранения в HashSet (по состоянию пробирок) ---
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof State)) return false;
-        State state = (State) o;
+    public boolean equals(Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+        if (!(o instanceof State state))
+        {
+            return false;
+        }
         return Objects.equals(tubes, state.tubes);
     }
 
