@@ -3,139 +3,145 @@ package org.example;
 import java.util.*;
 
 public class Solver {
-    private final State initial;
+    private final List<List<String>> tubes;
+
+    public List<List<String>> getTubes() {
+        return tubes;
+    }
 
     public Solver(List<List<String>> tubes) {
-        this.initial = new State(tubes);
+        this.tubes = tubes;
     }
 
     public List<Move> solve() {
-        if (initial.isSolved()) {
-            return Collections.emptyList();
-        }
-
-        long startTime = System.currentTimeMillis();
-        final long TIME_LIMIT_MS = 10000; // максимум 5 секунд на поиск
-
-        Queue<State> queue = new ArrayDeque<>();
-        Map<State, Parent> parent = new HashMap<>();
-        queue.add(initial);
-        parent.put(initial, new Parent(null, null));
-
-        int nodes = 0;
-
-        while (!queue.isEmpty()) {
-            // проверка на превышение лимита времени
-            if (System.currentTimeMillis() - startTime > TIME_LIMIT_MS) {
-                System.out.println("Время решения истекло (" + TIME_LIMIT_MS + " мс)");
-                return null;
-            }
-
-            State current = queue.poll();
-            nodes++;
-            int maxNodes = 5_000_000;
-            if (nodes > maxNodes) {
-                System.out.println("Превышен лимит узлов (" + maxNodes + ")");
-                return null;
-            }
-
-            if (current.isSolved()) {
-                return reconstruct(parent, current);
-            }
-
-            for (Move move : getPossibleMoves(current)) {
-                State next = current.makeMove(move.getFrom(), move.getTo());
-                if (next == null) continue;
-
-                if (!parent.containsKey(next)) {
-                    parent.put(next, new Parent(current, move));
-                    queue.add(next);
-                }
-            }
-        }
-
-        return null;
-    }
-
-
-    private List<Move> reconstruct(Map<State, Parent> parent, State goal) {
-        LinkedList<Move> path = new LinkedList<>();
-        State current = goal;
-
-        while (true)
-        {
-            Parent p = parent.get(current);
-            if (p == null || p.prev == null)
-            {
-                break;
-            }
-            path.addFirst(p.move);
-            current = p.prev;
-        }
-
-        return path;
-    }
-
-    private record Parent(State prev, Move move) {
-    }
-
-    /**
-     * Находит все возможные переливания (from → to),
-     * где есть хотя бы один цвет в "from" и свободное место в "to"
-     */
-    private List<Move> getPossibleMoves(State state) {
         List<Move> moves = new ArrayList<>();
-        List<List<String>> tubes = state.getTubes();
+        int step = 0;
 
-        for (int i = 0; i < tubes.size(); i++)
-        {
-            List<String> from = tubes.get(i);
-            String colorToPour = topColor(from);
-            if (colorToPour == null)
-            {
-                continue;
+        while (true) {
+            // если все колбы однородные или пустые — задача решена
+            if (allTubesUniformOrEmpty()) break;
+
+            boolean movedInThisIteration = false;
+
+            for (int i = 0; i < tubes.size(); i++) {
+                List<String> from = tubes.get(i);
+                if (isUniformOrEmpty(from)) continue;
+
+                boolean movedFromThisTube;
+                do {
+                    movedFromThisTube = false;
+                    String top = topColor(from);
+                    if (top == null) break;
+
+                    for (int j = 0; j < tubes.size(); j++) {
+                        if (i == j) continue;
+                        List<String> to = tubes.get(j);
+
+                        if (canPour(from, to)) {
+                            int moved = pour(from, to);
+                            if (moved > 0) {
+                                step++;
+                                moves.add(new Move(i + 1, j + 1));
+                                movedFromThisTube = true;
+                                movedInThisIteration = true;
+
+                                System.out.println("Ход " + step + ": " + new Move(i + 1, j + 1));
+                                printTubes();
+
+                                // после переливания проверяем с этой же колбы дальше
+                                break;
+                            }
+                        }
+                    }
+                } while (movedFromThisTube);
             }
 
-            for (int j = 0; j < tubes.size(); j++) {
-                if (i == j)
-                {
-                    continue;
-                }
-                List<String> to = tubes.get(j);
-
-                if (canPour(from, to))
-                {
-                    moves.add(new Move(i, j));
-                }
-            }
+            if (!movedInThisIteration) break; // если с ни одной колбы больше перелить нельзя
         }
+
         return moves;
     }
 
-    private String topColor(List<String> tube)
-    {
-        for (String cell : tube)
-        {
+    private boolean allTubesUniformOrEmpty() {
+        for (List<String> tube : tubes) {
+            if (!isUniformOrEmpty(tube)) return false;
+        }
+        return true;
+    }
+
+    private boolean isUniformOrEmpty(List<String> tube) {
+        String color = null;
+        for (String cell : tube) {
+            if (cell != null && !cell.equals(".")) {
+                if (color == null) color = cell;
+                else if (!color.equals(cell)) return false;
+            }
+        }
+        return true;
+    }
+
+    private String topColor(List<String> tube) {
+        for (int i = tube.size() - 1; i >= 0; i--) {
+            String cell = tube.get(i);
             if (cell != null && !cell.equals(".")) return cell;
         }
         return null;
     }
 
-    private boolean canPour(List<String> from, List<String> to)
-    {
+    private boolean canPour(List<String> from, List<String> to) {
         String topFrom = topColor(from);
-        if (topFrom == null)
-        {
-            return false;
-        }
-
-        boolean hasEmpty = to.stream().anyMatch(s -> s == null || s.equals("."));
-        if (!hasEmpty)
-        {
-            return false;
-        }
+        if (topFrom == null) return false;
 
         String topTo = topColor(to);
-        return topTo == null || topTo.equals(topFrom);
+        boolean hasSpace = to.stream().anyMatch(s -> s == null || s.equals("."));
+        return hasSpace && (topTo == null || topTo.equals(topFrom));
+    }
+
+    private int pour(List<String> from, List<String> to) {
+        String topFrom = topColor(from);
+        if (topFrom == null) return 0;
+
+        // Считаем, сколько элементов сверху одинакового цвета
+        int countToMove = 0;
+        for (int i = from.size() - 1; i >= 0; i--) {
+            String cell = from.get(i);
+            if (cell != null && cell.equals(topFrom)) countToMove++;
+            else if (cell != null) break;
+        }
+
+        if (countToMove == 0) return 0;
+
+        // Переливаем элементы в первую пустую позицию слева (индексы 0..v-1)
+        int moved = 0;
+        for (int i = from.size() - 1; i >= 0 && moved < countToMove; i--) {
+            String cell = from.get(i);
+            if (cell != null && cell.equals(topFrom)) {
+                for (int j = 0; j < to.size(); j++) {
+                    if (to.get(j) == null || to.get(j).equals(".")) {
+                        to.set(j, topFrom);
+                        from.set(i, null);
+                        moved++;
+                        break; // нашли пустое место для этой капли
+                    }
+                }
+            } else if (cell != null) {
+                break; // встретили другой цвет
+            }
+        }
+
+        return moved;
+    }
+
+
+    private void printTubes() {
+        for (int i = 0; i < tubes.size(); i++) {
+            List<String> tube = tubes.get(i);
+            System.out.print("Колба " + (i + 1) + ": ");
+            for (String cell : tube) {
+                System.out.print((cell == null ? "." : cell) + " ");
+            }
+            System.out.println();
+        }
+        System.out.println();
     }
 }

@@ -11,17 +11,9 @@ public class Move {
         this.to = to;
     }
 
-    public int getFrom() {
-        return from;
-    }
-
-    public int getTo() {
-        return to;
-    }
-
     @Override
     public String toString() {
-        return "Move{" + "from=" + from + ", to=" + to + '}';
+        return "Перемещение{" + "из состояния " + from + ", в состояние " + to + '}';
     }
 
     @Override

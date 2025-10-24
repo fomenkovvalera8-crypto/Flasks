@@ -5,13 +5,18 @@ import java.io.IOException;
 import java.util.*;
 
 public class Filling {
+    private final List<List<String>> tubes = new ArrayList<>();
+    private int n;
+    private int v;
+    public List<List<String>> getTubes() {
+        return tubes;
+    }
+
     /**
      * Метод проверки входных аргументов - N и V
      * @param args Входной массив строк
-     * @return Размерность матрицы NxV в виде int[], где int[0]=N, int[1]=V
      */
-    public int[] readSizeFlasks(String[] args) {
-        int n, v;
+    public void readSizeFlasks(String[] args) {
         if (args.length != 2) {
             System.out.println("При запуске программы должны быть два параметра - N и V");
             System.exit(1);
@@ -22,7 +27,6 @@ public class Filling {
         } catch (NumberFormatException e) {
             System.out.println("Параметры N и V должны быть целыми числами");
             System.exit(1);
-            return null;
         }
         if ((v > 2) && (n < 3)) {
             System.out.println("Если ячеек в колбе больше двух, для решении задачи надо минимум 3 колбы");
@@ -40,7 +44,6 @@ public class Filling {
             System.out.println("Количество колб не может быть меньше количества ячеек в колбе");
             System.exit(1);
         }
-        return new int[]{n, v};
     }
 
     /**
@@ -79,11 +82,9 @@ public class Filling {
 
     /**
      * Метод проверки заполнения колб, чтобы 2 колбы были пустые
-     * @param n Количество колб
-     * @param tubes Лист с колбами
      * @return Флаг соответствия
      */
-    private boolean checkTwoEmptyFlasks(int n, List<List<String>> tubes){
+    private boolean checkTwoEmptyFlasks(){
         long emptyCount = tubes.stream()
                 .filter(tube -> tube.stream().allMatch(Objects::isNull))
                 .count();
@@ -92,11 +93,9 @@ public class Filling {
 
     /**
      * Метод проверки заполненных колб на то, что каждый цвет суммарно заполняет одну колбу
-     * @param v Количество ячеек в колбе
-     * @param tubes Коллекция колб
      * @return Флаг соответствия
      */
-    private boolean divisibleByV(int v, List<List<String>> tubes){
+    private boolean divisibleByV(){
         Map<String, Integer> colorCounts = new HashMap<>();
         for (List<String> tube : tubes)
         {
@@ -171,12 +170,9 @@ public class Filling {
     /**
      * Метод для ручного заполнения колб
      * @param br Буфер для считывания
-     * @param n Количество колб
-     * @param v Количество ячеек в колбе
-     * @param tubes Лист с колбами
      * @throws IOException Ошибка ввода/вывода
      */
-    private void manualFillingFlasks(BufferedReader br, int n, int v, List<List<String>> tubes) throws IOException {
+    private void manualFillingFlasks(BufferedReader br) throws IOException {
         int tubesToInput = Math.max(1, n - 2);
         Map<String, Integer> colorCounts = new HashMap<>();
         System.out.printf("""
@@ -253,17 +249,17 @@ public class Filling {
             List<String> emptyTube = new ArrayList<>(Collections.nCopies(v, null));
             tubes.add(emptyTube);
         }
-        if (n > 2 && checkTwoEmptyFlasks(n,tubes))
+        if (n > 2 && checkTwoEmptyFlasks())
         {
             System.out.println("Ошибка: должно быть две полностью пустые колбы. Повторите ввод заново.");
             tubes.clear();
-            manualFillingFlasks(br, n, v, tubes);
+            manualFillingFlasks(br);
         }
-        if (!divisibleByV(v, tubes))
+        if (!divisibleByV())
         {
             System.out.println("Ошибка: общее количество капель каждого цвета должно быть кратно " + v + ". Повторите ввод заново.");
             tubes.clear();
-            manualFillingFlasks(br, n, v, tubes);
+            manualFillingFlasks(br);
         }
     }
 
@@ -292,11 +288,8 @@ public class Filling {
     }
     /**
      * Метод для автоматического заполнения колб
-     * @param n Количество колб
-     * @param v Количество ячеек в колбе
-     * @param tubes Лист с колбами
      */
-    private void autoFillingFlasks(int n, int v, List<List<String>> tubes) {
+    private void autoFillingFlasks() {
         if (n < 4) {
             List<String> tube = new ArrayList<>();
             if (v == 2) {
@@ -388,20 +381,17 @@ public class Filling {
     /**
      * Метод для заполнения колб
      * @param br Буфер для считывания
-     * @param n Количество колб
-     * @param v Количество единиц жидкости в колбе
-     * @param tubes Колбы, которые тут заполнятся
      * @throws IOException Ошибка ввода/вывода
      */
-    public void fillingFlasks(BufferedReader br, int n, int v, List<List<String>> tubes) throws IOException {
+    public void fillingFlasks(BufferedReader br) throws IOException {
         int mode = modeSelection(br);
         if (mode == 1)
         {
-            manualFillingFlasks(br, n, v, tubes);
+            manualFillingFlasks(br);
         }
         else
         {
-            autoFillingFlasks(n, v, tubes);
+            autoFillingFlasks();
         }
     }
 }
