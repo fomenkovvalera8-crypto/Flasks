@@ -10,10 +10,12 @@ public class Solver {
     }
 
     public List<Move> solve() {
-        if (initial.isSolved())
-        {
+        if (initial.isSolved()) {
             return Collections.emptyList();
         }
+
+        long startTime = System.currentTimeMillis();
+        final long TIME_LIMIT_MS = 10000; // максимум 5 секунд на поиск
 
         Queue<State> queue = new ArrayDeque<>();
         Map<State, Parent> parent = new HashMap<>();
@@ -22,14 +24,18 @@ public class Solver {
 
         int nodes = 0;
 
-        while (!queue.isEmpty())
-        {
+        while (!queue.isEmpty()) {
+            // проверка на превышение лимита времени
+            if (System.currentTimeMillis() - startTime > TIME_LIMIT_MS) {
+                System.out.println("Время решения истекло (" + TIME_LIMIT_MS + " мс)");
+                return null;
+            }
+
             State current = queue.poll();
             nodes++;
             int maxNodes = 5_000_000;
-            if (nodes > maxNodes)
-            {
-                System.out.println("Превышен лимит памяти (" + maxNodes + ")");
+            if (nodes > maxNodes) {
+                System.out.println("Превышен лимит узлов (" + maxNodes + ")");
                 return null;
             }
 
@@ -37,16 +43,11 @@ public class Solver {
                 return reconstruct(parent, current);
             }
 
-            for (Move move : getPossibleMoves(current))
-            {
+            for (Move move : getPossibleMoves(current)) {
                 State next = current.makeMove(move.getFrom(), move.getTo());
-                if (next == null)
-                {
-                    continue;
-                }
+                if (next == null) continue;
 
-                if (!parent.containsKey(next))
-                {
+                if (!parent.containsKey(next)) {
                     parent.put(next, new Parent(current, move));
                     queue.add(next);
                 }
@@ -55,6 +56,7 @@ public class Solver {
 
         return null;
     }
+
 
     private List<Move> reconstruct(Map<State, Parent> parent, State goal) {
         LinkedList<Move> path = new LinkedList<>();

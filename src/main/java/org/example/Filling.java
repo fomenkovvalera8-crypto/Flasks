@@ -321,25 +321,36 @@ public class Filling {
 
         int numColors = Math.min(v, numFilledTubes);
         int totalCells = numFilledTubes * v;
-        int repeatsPerColor = totalCells / numColors;  // сколько капель каждого цвета гарантированно
-        int extra = totalCells % numColors;
 
         List<String> colors = new ArrayList<>();
-        for (int i = 0; i < numColors; i++)
-        {
+        for (int i = 0; i < numColors; i++) {
             colors.add(Character.toString((char) ('A' + i)));
         }
 
         List<String> pool = new ArrayList<>();
-        for (String color : colors)
-        {
-            for (int j = 0; j < repeatsPerColor; j++) {
-                pool.add(color);
+        int colorBatch = numColors * v;
+
+        while (pool.size() + colorBatch <= totalCells) {
+            for (String color : colors) {
+                for (int j = 0; j < v; j++) {
+                    pool.add(color);
+                }
             }
         }
-        for (int i = 0; i < extra; i++) {
-            pool.add(colors.get(i));
+
+        int remaining = totalCells - pool.size();
+        if (remaining > 0) {
+            List<String> extraColors = new ArrayList<>(colors);
+            Collections.shuffle(extraColors, random);
+            for (String color : extraColors) {
+                if (remaining <= 0) break;
+                for (int j = 0; j < v && remaining > 0; j++) {
+                    pool.add(color);
+                    remaining--;
+                }
+            }
         }
+
         Collections.shuffle(pool, random);
 
         for (int i = 0; i < numFilledTubes; i++) {
@@ -348,7 +359,6 @@ public class Filling {
                 tube.add(pool.removeFirst());
             }
 
-            // Если колба одноцветная, исправляем её
             if (isSolvedTube(tube)) {
                 for (int j = 0; j < v; j++) {
                     for (String color : colors) {
